@@ -30,8 +30,12 @@ Each device links back to the node's page in the SolarWinds Web Console.
   that identify the same physical device by MAC — e.g. **UniFi Network** —
   will merge into the same Home Assistant device instead of creating a
   second one.
-- **Web Console link**: each device's "Visit device" link opens the node's
-  details page directly in the SolarWinds Web Console.
+- **Web Console link**: each device's "Visit device" link opens that exact
+  node in the SolarWinds Web Console
+  (`.../Orion/NetPerfMon/NodeDetails.aspx?NetObject=N:<NodeID>`). The
+  console's own address is auto-detected from `Orion.Websites` (the primary
+  web server, or `ExternalUrl` if your deployment sets one), so it doesn't
+  need to be typed in — see [Configuration](#configuration) to override it.
 - New nodes and volumes discovered by SolarWinds are automatically added as
   entities on the next poll — no reconfiguration needed.
 
@@ -70,9 +74,11 @@ Configuration is done entirely through the UI:
    - **Username** / **Password** — an Orion local or AD account
    - **Verify SSL certificate** — SWIS presents a self-signed certificate by
      default; see the note below
-   - **Web Console URL** (optional) — the base URL of the SolarWinds Web
-     Console used to build the device links, e.g. `https://orion.example.com`.
-     Defaults to `https://<host>` if left blank.
+   - **Web Console URL override** (optional) — normally left blank; the
+     console's base URL is auto-detected from `Orion.Websites` each poll.
+     Set this only if that address isn't reachable by the browser using the
+     integration (e.g. an internal FQDN behind a reverse proxy), e.g.
+     `https://orion.example.com`.
 
 After setup, use the integration's **Configure** option to set the polling
 interval and which volume types (e.g. `Fixed Disk`) are exposed as sensors.
@@ -93,11 +99,15 @@ with parameterized SWQL, authenticating over HTTP Basic Auth as documented in
 the [SWIS REST API guide](https://github.com/trooperthorn/SolarWinds_OrionGuides/blob/main/docs/swis/rest-api.md).
 It is entirely read-only — no writes are made to your SolarWinds server.
 
-Two queries run each poll:
+Each poll runs:
 
 - `SELECT ... FROM Orion.Nodes` for node inventory, status and performance
 - `SELECT ... FROM Orion.Volumes WHERE VolumeType IN @volumeTypes` for disk
   capacity, joined to nodes by `NodeID`
+- `SELECT ... FROM Orion.NPM.Interfaces WHERE PhysicalAddress IS NOT NULL` for
+  MAC addresses (best-effort; requires the NPM module)
+- `SELECT ... FROM Orion.Websites` for the web console's own address, unless
+  a manual override is configured
 
 ## Brand assets
 

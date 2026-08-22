@@ -36,10 +36,20 @@ _LOGGER = logging.getLogger(__name__)
 BYTES_PER_GB = 1073741824
 
 
+def _node_configuration_url(node: SwisNodeData, web_console_url: str) -> str:
+    """The node's page in the SolarWinds Web Console.
+
+    Orion.Nodes' NetObject prefix is "N", so node 42 is addressed as N:42 in
+    web console URLs, e.g. https://<console>/Orion/NetPerfMon/NodeDetails.aspx?NetObject=N:42
+    """
+    return (
+        f"{web_console_url}/Orion/NetPerfMon/NodeDetails.aspx?NetObject=N:{node.node_id}"
+    )
+
+
 def _node_device_info(node: SwisNodeData, web_console_url: str) -> DeviceInfo:
     raw = node.raw
-    details_url = raw.get("DetailsUrl") or ""
-    configuration_url = f"{web_console_url}{details_url}" if details_url else web_console_url
+    configuration_url = _node_configuration_url(node, web_console_url)
 
     connections = set()
     if node.mac_address:
@@ -94,13 +104,11 @@ class SwisNodeEntity(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntity)
         self,
         coordinator: SwisDataUpdateCoordinator,
         node_id: int,
-        web_console_url: str,
         description: SensorEntityDescription,
     ) -> None:
         super().__init__(coordinator)
         self.entity_description = description
         self._node_id = node_id
-        self._web_console_url = web_console_url
         self._attr_unique_id = f"{DOMAIN}_{node_id}_{description.key}"
 
     @property
@@ -121,7 +129,7 @@ class SwisNodeEntity(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntity)
         node = self._node
         if node is None:
             return None
-        return _node_device_info(node, self._web_console_url)
+        return _node_device_info(node, self.coordinator.web_console_url)
 
 
 class SwisNodeStatusSensor(SwisNodeEntity):
@@ -287,12 +295,10 @@ class SwisVolumeSensor(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntit
         node_id: int,
         volume_id: int,
         volume_name: str,
-        web_console_url: str,
     ) -> None:
         super().__init__(coordinator)
         self._node_id = node_id
         self._volume_id = volume_id
-        self._web_console_url = web_console_url
         self._attr_unique_id = f"{DOMAIN}_{node_id}_volume_{volume_id}"
         self._attr_translation_key = "volume_percent_used"
         self._attr_translation_placeholders = {"volume": volume_name}
@@ -332,7 +338,7 @@ class SwisVolumeSensor(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntit
         node = self._node
         if node is None:
             return None
-        return _node_device_info(node, self._web_console_url)
+        return _node_device_info(node, self.coordinator.web_console_url)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
@@ -357,9 +363,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up SWIS sensors from a config entry, and keep adding new ones as they appear."""
-    runtime = entry.runtime_data
-    coordinator = runtime.coordinator
-    web_console_url = runtime.web_console_url
+    coordinator = entry.runtime_data.coordinator
 
     known_nodes: set[int] = set()
     known_volumes: set[int] = set()
@@ -373,7 +377,7 @@ async def async_setup_entry(
             if node_id not in known_nodes:
                 known_nodes.add(node_id)
                 new_entities.extend(
-                    cls(coordinator, node_id, web_console_url, cls.entity_description)
+                    cls(coordinator, node_id, cls.entity_description)
                     for cls in NODE_SENSOR_CLASSES
                 )
             for volume_id, volume in node.volumes.items():
@@ -385,7 +389,6 @@ async def async_setup_entry(
                             node_id,
                             volume_id,
                             volume.get("Caption") or f"Volume {volume_id}",
-                            web_console_url,
                         )
                     )
 

@@ -26,7 +26,6 @@ class SwisRuntimeData:
     """Runtime data stored on the config entry."""
 
     coordinator: SwisDataUpdateCoordinator
-    web_console_url: str
 
 
 SwisConfigEntry = ConfigEntry[SwisRuntimeData]
@@ -48,15 +47,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: SwisConfigEntry) -> bool
     scan_interval = entry.options.get("scan_interval", DEFAULT_SCAN_INTERVAL)
 
     coordinator = SwisDataUpdateCoordinator(
-        hass, entry, client, volume_types, scan_interval
+        hass,
+        entry,
+        client,
+        volume_types,
+        scan_interval,
+        host=entry.data[CONF_HOST],
+        web_console_url_override=entry.data.get(CONF_WEB_CONSOLE_URL) or None,
     )
     await coordinator.async_config_entry_first_refresh()
 
-    entry.runtime_data = SwisRuntimeData(
-        coordinator=coordinator,
-        web_console_url=entry.data.get(CONF_WEB_CONSOLE_URL)
-        or f"https://{entry.data[CONF_HOST]}",
-    )
+    entry.runtime_data = SwisRuntimeData(coordinator=coordinator)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
 

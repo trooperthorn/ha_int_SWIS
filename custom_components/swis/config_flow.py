@@ -80,9 +80,9 @@ class SwisConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            # Left blank, this means "auto-detect from Orion.Websites" (see
+            # coordinator.py); only store a value here if the user overrode it.
             web_console_url = (user_input.get(CONF_WEB_CONSOLE_URL) or "").rstrip("/")
-            if not web_console_url:
-                web_console_url = f"https://{user_input[CONF_HOST]}"
 
             data = {
                 CONF_HOST: user_input[CONF_HOST],

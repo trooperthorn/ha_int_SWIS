@@ -22,9 +22,18 @@ SELECT
     n.Location, n.Contact, n.Status, n.UnManaged,
     n.CPULoad, n.CPUCount, n.PercentMemoryUsed, n.TotalMemory,
     n.ResponseTime, n.PercentLoss, n.LastBoot, n.SystemUpTime,
-    n.DetailsUrl, n.Uri
+    n.Uri
 FROM Orion.Nodes n
 ORDER BY n.NodeID
+"""
+
+# The web console's own address, so the link to it doesn't have to be typed in by
+# hand. A server can run more than one web console instance (an "additional web
+# server"); Orion.Websites.Type distinguishes the primary one from the rest.
+WEBSITES_QUERY = """
+SELECT TOP 10 WebsiteID, ServerName, IPAddress, Port, Type, SSLEnabled, FQDN, ExternalUrl
+FROM Orion.Websites
+ORDER BY WebsiteID
 """
 
 VOLUMES_QUERY = """
@@ -70,6 +79,8 @@ class SwisDataUpdateCoordinator(DataUpdateCoordinator[dict[int, SwisNodeData]]):
         client: SwisClient,
         volume_types: list[str],
         update_interval: int,
+        host: str,
+        web_console_url_override: str | None,
     ) -> None:
         super().__init__(
             hass,
@@ -79,8 +90,20 @@ class SwisDataUpdateCoordinator(DataUpdateCoordinator[dict[int, SwisNodeData]]):
         )
         self._client = client
         self._volume_types = volume_types
+        self._host = host
+        self._web_console_url_override = web_console_url_override
+        self._discovered_web_console_url: str | None = None
         # None = not probed yet, True/False = whether Orion.NPM.Interfaces answered.
         self._npm_interfaces_available: bool | None = None
+
+    @property
+    def web_console_url(self) -> str:
+        """Best known base URL for the SolarWinds Web Console."""
+        return (
+            self._web_console_url_override
+            or self._discovered_web_console_url
+            or f"https://{self._host}"
+        )
 
     async def _async_update_data(self) -> dict[int, SwisNodeData]:
         try:
@@ -115,7 +138,56 @@ class SwisDataUpdateCoordinator(DataUpdateCoordinator[dict[int, SwisNodeData]]):
             if node is not None:
                 node.mac_address = mac
 
+        if not self._web_console_url_override:
+            try:
+                self._discovered_web_console_url = await self._async_discover_console_url()
+            except SwisAuthError as err:
+                raise UpdateFailed(f"Authentication failed: {err}") from err
+            except SwisConnectionError as err:
+                raise UpdateFailed(f"Could not reach SolarWinds: {err}") from err
+
         return result
+
+    async def _async_discover_console_url(self) -> str | None:
+        """Return the primary web console's base URL from Orion.Websites.
+
+        Best-effort: any failure to query or parse just means the caller
+        falls back to the configured host, not a failed update.
+        """
+        try:
+            websites = await self._client.query(WEBSITES_QUERY)
+        except (SwisAuthError, SwisConnectionError):
+            raise
+        except SwisError as err:
+            _LOGGER.debug("Could not query Orion.Websites (%s); using fallback URL", err)
+            return None
+
+        if not websites:
+            return None
+
+        primary = next(
+            (
+                row
+                for row in websites
+                if isinstance(row.get("Type"), str) and "primary" in row["Type"].lower()
+            ),
+            websites[0],
+        )
+
+        external_url = (primary.get("ExternalUrl") or "").strip()
+        if external_url:
+            return external_url.rstrip("/")
+
+        host = primary.get("FQDN") or primary.get("ServerName") or primary.get("IPAddress")
+        if not host:
+            return None
+
+        scheme = "https" if primary.get("SSLEnabled") else "http"
+        default_port = 443 if scheme == "https" else 80
+        port = primary.get("Port")
+        if port and port != default_port:
+            return f"{scheme}://{host}:{port}"
+        return f"{scheme}://{host}"
 
     async def _async_get_macs(self) -> dict[int, str]:
         """Return the first known MAC per node, from Orion.NPM.Interfaces.

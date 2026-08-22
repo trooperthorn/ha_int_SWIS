@@ -10,7 +10,7 @@
           "username": "Username",
           "password": "Password",
           "verify_ssl": "Verify SSL certificate",
-          "web_console_url": "Web Console URL (optional, defaults to https://[the host address above])"
+          "web_console_url": "Web Console URL override (optional; SolarWinds' own Orion.Websites entry is used automatically if left blank)"
         }
       }
     },
