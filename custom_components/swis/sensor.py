@@ -1,8 +1,12 @@
 """Sensor platform for the SolarWinds Observability (SWIS) integration.
 
-Each SolarWinds node becomes a Home Assistant device, with CPU, memory and
-per-volume sensors, plus a status sensor. The device's `configuration_url`
-points at the node's page in the SolarWinds Web Console.
+Each SolarWinds node becomes a Home Assistant device, with State, CPU
+utilization, memory utilization, uptime and per-volume sensors. The
+device's `configuration_url` points at the node's page in the SolarWinds
+Web Console, and its MAC address (when SolarWinds reports one) is exposed
+as a device connection so other integrations that track the same physical
+device by MAC (e.g. UniFi Network) merge into the same device instead of
+creating a second one.
 """
 from __future__ import annotations
 
@@ -17,12 +21,14 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.const import PERCENTAGE, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from . import SwisConfigEntry
-from .const import DOMAIN, MANUFACTURER, STATUS_NAMES, STATUS_OK
+from .const import DOMAIN, MANUFACTURER, STATUS_NAMES, STATUS_OK, UNAVAILABLE_METRIC_VALUE
 from .coordinator import SwisDataUpdateCoordinator, SwisNodeData
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,8 +41,16 @@ def _node_device_info(node: SwisNodeData, web_console_url: str) -> DeviceInfo:
     details_url = raw.get("DetailsUrl") or ""
     configuration_url = f"{web_console_url}{details_url}" if details_url else web_console_url
 
+    connections = set()
+    if node.mac_address:
+        # Shared with other integrations (e.g. UniFi Network) that identify the
+        # same physical device by MAC, so Home Assistant merges them into one
+        # device instead of listing SolarWinds' view of it separately.
+        connections.add((CONNECTION_NETWORK_MAC, node.mac_address))
+
     return DeviceInfo(
         identifiers={(DOMAIN, f"node_{node.node_id}")},
+        connections=connections,
         name=raw.get("Caption") or f"Node {node.node_id}",
         manufacturer=raw.get("Vendor") or MANUFACTURER,
         model=raw.get("MachineType") or None,
@@ -44,10 +58,27 @@ def _node_device_info(node: SwisNodeData, web_console_url: str) -> DeviceInfo:
     )
 
 
+def _parse_last_boot(value: str | None) -> Any | None:
+    """Parse Orion.Nodes.LastBoot into an aware datetime (treated as UTC)."""
+    if not value:
+        return None
+    parsed = dt_util.parse_datetime(value)
+    if parsed is None:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt_util.UTC)
+    return parsed
+
+
 class SwisNodeEntity(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntity):
     """Base entity for a sensor tied to one SolarWinds node."""
 
     _attr_has_entity_name = True
+
+    # Set on subclasses that report a gauge metric SolarWinds can mark as not
+    # collected (see UNAVAILABLE_METRIC_VALUE). When set, the entity goes
+    # unavailable rather than showing that sentinel as a real reading.
+    _raw_metric_field: str | None = None
 
     def __init__(
         self,
@@ -68,7 +99,12 @@ class SwisNodeEntity(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntity)
 
     @property
     def available(self) -> bool:
-        return super().available and self._node is not None
+        node = self._node
+        if not super().available or node is None:
+            return False
+        if self._raw_metric_field is not None:
+            return node.raw.get(self._raw_metric_field) != UNAVAILABLE_METRIC_VALUE
+        return True
 
     @property
     def device_info(self) -> DeviceInfo | None:
@@ -122,7 +158,9 @@ class SwisNodeStatusSensor(SwisNodeEntity):
 
 
 class SwisNodeCpuSensor(SwisNodeEntity):
-    """Current CPU load, percent."""
+    """Current CPU utilization, percent."""
+
+    _raw_metric_field = "CPULoad"
 
     entity_description = SensorEntityDescription(
         key="cpu_load",
@@ -146,7 +184,9 @@ class SwisNodeCpuSensor(SwisNodeEntity):
 
 
 class SwisNodeMemorySensor(SwisNodeEntity):
-    """Current memory utilisation, percent."""
+    """Current memory utilization, percent."""
+
+    _raw_metric_field = "PercentMemoryUsed"
 
     entity_description = SensorEntityDescription(
         key="percent_memory_used",
@@ -173,6 +213,8 @@ class SwisNodeMemorySensor(SwisNodeEntity):
 class SwisNodeResponseTimeSensor(SwisNodeEntity):
     """ICMP response time, milliseconds."""
 
+    _raw_metric_field = "ResponseTime"
+
     entity_description = SensorEntityDescription(
         key="response_time",
         translation_key="response_time",
@@ -189,11 +231,44 @@ class SwisNodeResponseTimeSensor(SwisNodeEntity):
         return node.raw.get("ResponseTime") if node else None
 
 
+class SwisNodeUptimeSensor(SwisNodeEntity):
+    """When the node last booted, so Home Assistant can show how long it's been up.
+
+    Modeled as a timestamp (the moment of the last boot) rather than a
+    continuously-recalculated duration, matching how other network
+    integrations (e.g. UniFi Network) report device uptime: the frontend
+    renders it as a relative "X ago" and the exact boot time on demand.
+    """
+
+    entity_description = SensorEntityDescription(
+        key="uptime",
+        translation_key="uptime",
+        device_class=SensorDeviceClass.TIMESTAMP,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    )
+
+    @property
+    def native_value(self) -> Any | None:
+        node = self._node
+        return _parse_last_boot(node.raw.get("LastBoot")) if node else None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        node = self._node
+        if node is None:
+            return {}
+        uptime_seconds = node.raw.get("SystemUpTime")
+        return {
+            "uptime_days": round(uptime_seconds / 86400, 2) if uptime_seconds else None,
+        }
+
+
 NODE_SENSOR_CLASSES: tuple[type[SwisNodeEntity], ...] = (
     SwisNodeStatusSensor,
     SwisNodeCpuSensor,
     SwisNodeMemorySensor,
     SwisNodeResponseTimeSensor,
+    SwisNodeUptimeSensor,
 )
 
 
@@ -232,7 +307,10 @@ class SwisVolumeSensor(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntit
 
     @property
     def available(self) -> bool:
-        return super().available and self._volume is not None
+        volume = self._volume
+        if not super().available or volume is None:
+            return False
+        return volume.get("VolumePercentUsed") != UNAVAILABLE_METRIC_VALUE
 
     @property
     def name(self) -> str:

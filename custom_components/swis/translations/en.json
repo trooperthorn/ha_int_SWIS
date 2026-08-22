@@ -36,10 +36,11 @@
   },
   "entity": {
     "sensor": {
-      "node_status": { "name": "Status" },
-      "cpu_load": { "name": "CPU load" },
-      "percent_memory_used": { "name": "Memory used" },
+      "node_status": { "name": "State" },
+      "cpu_load": { "name": "CPU utilization" },
+      "percent_memory_used": { "name": "Memory utilization" },
       "response_time": { "name": "Response time" },
+      "uptime": { "name": "Uptime" },
       "volume_percent_used": { "name": "{volume} used" }
     }
   }

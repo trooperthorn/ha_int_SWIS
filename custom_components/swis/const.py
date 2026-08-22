@@ -15,6 +15,11 @@ DEFAULT_VOLUME_TYPES = ["Fixed Disk"]
 
 MANUFACTURER = "SolarWinds"
 
+# SolarWinds reports this sentinel on a gauge metric (CPU load, memory, response
+# time, volume percent used, ...) when the value could not be collected. Treat any
+# sensor reporting exactly this value as unavailable rather than a real reading.
+UNAVAILABLE_METRIC_VALUE = -2
+
 # Orion.Nodes.Status values that count as unmanaged/no data, mirrored from
 # Orion.StatusInfo (see docs/reference/status-codes.md in the SolarWinds_OrionGuides repo).
 STATUS_NAMES: dict[int, str] = {

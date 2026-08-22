@@ -11,13 +11,25 @@ Each device links back to the node's page in the SolarWinds Web Console.
 
 - **Devices**: one Home Assistant device per SolarWinds node (`Orion.Nodes`).
 - **Sensors** per node:
-  - **Status** — Up / Down / Warning / etc. (from `Orion.Nodes.Status`), with
+  - **State** — Up / Down / Warning / etc. (from `Orion.Nodes.Status`), with
     IP address, vendor, machine type, location and other details as attributes.
-  - **CPU load** (%)
-  - **Memory used** (%), with total memory (GB) as an attribute
+  - **CPU utilization** (%)
+  - **Memory utilization** (%), with total memory (GB) as an attribute
+  - **Uptime** — a timestamp of the node's last boot (`Orion.Nodes.LastBoot`),
+    so Home Assistant shows how long it's been up as a relative time
   - **Response time** (ms) — disabled by default, diagnostic entity
   - **`<Volume> used`** (%) — one sensor per fixed disk/volume on the node,
     with size/used/free (GB) as attributes
+- **Unavailable metrics stay unavailable**: SolarWinds reports `-2` on a
+  gauge metric (CPU, memory, response time, volume percent used) when it
+  could not collect a value. Rather than show `-2` as a reading, the
+  affected sensor goes unavailable until SolarWinds reports a real value.
+- **Cross-integration device matching**: when SolarWinds can determine a
+  node's MAC address (via the NPM module's interface data, if licensed),
+  it's attached to the device as a network connection. Other integrations
+  that identify the same physical device by MAC — e.g. **UniFi Network** —
+  will merge into the same Home Assistant device instead of creating a
+  second one.
 - **Web Console link**: each device's "Visit device" link opens the node's
   details page directly in the SolarWinds Web Console.
 - New nodes and volumes discovered by SolarWinds are automatically added as
