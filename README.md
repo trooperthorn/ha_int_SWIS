@@ -15,8 +15,8 @@ Each device links back to the node's page in the SolarWinds Web Console.
     IP address, vendor, machine type, location and other details as attributes.
   - **CPU utilization** (%)
   - **Memory utilization** (%), with total memory (GB) as an attribute
-  - **Uptime** — a timestamp of the node's last boot (`Orion.Nodes.LastBoot`),
-    so Home Assistant shows how long it's been up as a relative time
+  - **Uptime** — how long the node has been up, e.g. `2 Days`, from
+    `Orion.Nodes.SystemUpTime`, with the last boot time as an attribute
   - **Response time** (ms) — disabled by default, diagnostic entity
   - **`<Volume> used`** (%) — one sensor per fixed disk/volume on the node,
     with size/used/free (GB) as attributes

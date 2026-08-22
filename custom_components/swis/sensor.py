@@ -70,6 +70,16 @@ def _parse_last_boot(value: str | None) -> Any | None:
     return parsed
 
 
+def _format_uptime(seconds: float) -> str:
+    """Render Orion.Nodes.SystemUpTime (seconds) as e.g. "2 Days", "5 Hours"."""
+    seconds = int(seconds)
+    for unit, unit_seconds in (("Day", 86400), ("Hour", 3600), ("Minute", 60)):
+        amount = seconds // unit_seconds
+        if amount >= 1:
+            return f"{amount} {unit}{'' if amount == 1 else 's'}"
+    return f"{seconds} Second{'' if seconds == 1 else 's'}"
+
+
 class SwisNodeEntity(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntity):
     """Base entity for a sensor tied to one SolarWinds node."""
 
@@ -232,35 +242,29 @@ class SwisNodeResponseTimeSensor(SwisNodeEntity):
 
 
 class SwisNodeUptimeSensor(SwisNodeEntity):
-    """When the node last booted, so Home Assistant can show how long it's been up.
-
-    Modeled as a timestamp (the moment of the last boot) rather than a
-    continuously-recalculated duration, matching how other network
-    integrations (e.g. UniFi Network) report device uptime: the frontend
-    renders it as a relative "X ago" and the exact boot time on demand.
-    """
+    """How long the node has been up, e.g. "2 Days", from Orion.Nodes.SystemUpTime."""
 
     entity_description = SensorEntityDescription(
         key="uptime",
         translation_key="uptime",
-        device_class=SensorDeviceClass.TIMESTAMP,
+        icon="mdi:clock-outline",
         entity_category=EntityCategory.DIAGNOSTIC,
     )
 
     @property
-    def native_value(self) -> Any | None:
+    def native_value(self) -> str | None:
         node = self._node
-        return _parse_last_boot(node.raw.get("LastBoot")) if node else None
+        if node is None:
+            return None
+        uptime_seconds = node.raw.get("SystemUpTime")
+        return _format_uptime(uptime_seconds) if uptime_seconds is not None else None
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         node = self._node
         if node is None:
             return {}
-        uptime_seconds = node.raw.get("SystemUpTime")
-        return {
-            "uptime_days": round(uptime_seconds / 86400, 2) if uptime_seconds else None,
-        }
+        return {"last_boot": _parse_last_boot(node.raw.get("LastBoot"))}
 
 
 NODE_SENSOR_CLASSES: tuple[type[SwisNodeEntity], ...] = (
