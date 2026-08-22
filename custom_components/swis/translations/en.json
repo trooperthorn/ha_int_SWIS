@@ -1,0 +1,46 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to SolarWinds Observability (SWIS)",
+        "description": "Enter the connection details for your SolarWinds Observability Self-Hosted (Orion) server. Authentication uses an Orion username and password.",
+        "data": {
+          "host": "Host or IP address",
+          "port": "SWIS REST port",
+          "username": "Username",
+          "password": "Password",
+          "verify_ssl": "Verify SSL certificate",
+          "web_console_url": "Web Console URL (optional, defaults to https://<host>)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid username or password.",
+      "cannot_connect": "Could not connect to the SolarWinds server. Check the host, port and SSL settings.",
+      "unknown": "Unexpected error while connecting to SolarWinds."
+    },
+    "abort": {
+      "already_configured": "This SolarWinds server is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "SWIS options",
+        "data": {
+          "scan_interval": "Polling interval (seconds)",
+          "volume_types": "Volume types to monitor as drive sensors"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "node_status": { "name": "Status" },
+      "cpu_load": { "name": "CPU load" },
+      "percent_memory_used": { "name": "Memory used" },
+      "response_time": { "name": "Response time" },
+      "volume_percent_used": { "name": "{volume} used" }
+    }
+  }
+}
