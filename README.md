@@ -87,6 +87,13 @@ Two queries run each poll:
 - `SELECT ... FROM Orion.Volumes WHERE VolumeType IN @volumeTypes` for disk
   capacity, joined to nodes by `NodeID`
 
+## Brand assets
+
+`icon.png`/`logo.png` at the repo root are used by HACS. The native Home
+Assistant integration-picker icon requires a one-time submission to
+[home-assistant/brands](https://github.com/home-assistant/brands); see
+[`brands/README.md`](brands/README.md) for the prepared assets and steps.
+
 ## Credits
 
 Built against the API reference in
