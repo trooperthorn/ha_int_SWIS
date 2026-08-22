@@ -10,7 +10,7 @@
           "username": "Username",
           "password": "Password",
           "verify_ssl": "Verify SSL certificate",
-          "web_console_url": "Web Console URL (optional, defaults to https://<host>)"
+          "web_console_url": "Web Console URL (optional, defaults to https://[the host address above])"
         }
       }
     },
