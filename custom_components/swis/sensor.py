@@ -148,6 +148,8 @@ class SwisNodeStatusSensor(SwisNodeEntity):
         if node is None:
             return None
         status = node.raw.get("Status")
+        if not isinstance(status, int):
+            return None
         return STATUS_NAMES.get(status, f"Unknown ({status})")
 
     @property

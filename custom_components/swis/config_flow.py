@@ -119,7 +119,7 @@ class SwisConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
-        return SwisOptionsFlow(config_entry)
+        return SwisOptionsFlow()
 
 
 class SwisOptionsFlow(OptionsFlowWithReload):
