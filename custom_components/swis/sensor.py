@@ -28,7 +28,13 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.util import dt as dt_util
 
 from . import SwisConfigEntry
-from .const import DOMAIN, MANUFACTURER, STATUS_NAMES, STATUS_OK, UNAVAILABLE_METRIC_VALUE
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    STATUS_NAMES,
+    STATUS_OK,
+    UNAVAILABLE_METRIC_VALUE,
+)
 from .coordinator import SwisDataUpdateCoordinator, SwisNodeData
 
 _LOGGER = logging.getLogger(__name__)
