@@ -1,11 +1,13 @@
 {
   "domain": "swis",
   "name": "SolarWinds Observability (SWIS)",
-  "codeowners": ["@trooperthorn"],
+  "codeowners": [
+    "@trooperthorn"
+  ],
   "config_flow": true,
   "documentation": "https://github.com/trooperthorn/ha_int_swis",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/trooperthorn/ha_int_swis/issues",
   "requirements": [],
-  "version": "2026.08.22.1"
+  "version": "2026.09.03.1"
 }
