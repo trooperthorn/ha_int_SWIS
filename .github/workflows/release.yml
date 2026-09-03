@@ -1,9 +1,4 @@
-# Reconciles the version on main into a complete, verifiable GitHub Release.
-# A normal merge is the release trigger: maintainers never create or push tags
-# by hand. Reruns are safe; an already-published version is left immutable.
-# SWIS is a tree-installed HACS integration (no zip_release archive), so this
-# release job creates the tag and release from the tagged tree and skips the
-# archive/SBOM/checksum/attest steps a zip_release repo would need.
+# Release process and design: see docs/design.md.
 name: Release
 
 on:
