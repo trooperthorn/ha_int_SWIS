@@ -39,9 +39,10 @@ jobs:
         run: |
           set -euo pipefail
           CURRENT_VERSION="$(python3 - <<'PY'
+          import sys
           from pathlib import Path
-          from scripts.build_release_artifacts import validate_versions
-          from scripts.release_config import load
+          sys.path.insert(0, str(Path("scripts").resolve()))
+          from release_config import load, validate_versions
           print(validate_versions(load(Path.cwd())))
           PY
           )"
