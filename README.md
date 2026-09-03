@@ -7,6 +7,8 @@ sensors for CPU load, memory usage, and per-volume ("drive") disk usage.
 
 Each device links back to the node's page in the SolarWinds Web Console.
 
+See [docs/README.md](docs/README.md) for design notes.
+
 ## Features
 
 - **Devices**: one Home Assistant device per SolarWinds node (`Orion.Nodes`).
