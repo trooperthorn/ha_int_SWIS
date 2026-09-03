@@ -1,0 +1,8 @@
+{
+  "tag_prefix": "v",
+  "timezone": "America/Chicago",
+  "release_paths": ["custom_components/swis"],
+  "version_fields": [
+    {"path": "custom_components/swis/manifest.json", "kind": "json", "key": "version"}
+  ]
+}

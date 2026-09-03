@@ -6,7 +6,12 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    OptionsFlow,
+    OptionsFlowWithReload,
+)
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -117,11 +122,8 @@ class SwisConfigFlow(ConfigFlow, domain=DOMAIN):
         return SwisOptionsFlow(config_entry)
 
 
-class SwisOptionsFlow(OptionsFlow):
+class SwisOptionsFlow(OptionsFlowWithReload):
     """Options: polling interval and which volume types to expose as sensors."""
-
-    def __init__(self, config_entry: ConfigEntry) -> None:
-        self._config_entry = config_entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
@@ -129,7 +131,7 @@ class SwisOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
-        options = self._config_entry.options
+        options = self.config_entry.options
         schema = vol.Schema(
             {
                 vol.Optional(
