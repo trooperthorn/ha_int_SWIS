@@ -19,7 +19,7 @@ from homeassistant.components.sensor import (
     SensorEntityDescription,
     SensorStateClass,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTime
+from homeassistant.const import UnitOfRatio, UnitOfTime
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC
 from homeassistant.helpers.entity import DeviceInfo, EntityCategory
@@ -191,7 +191,7 @@ class SwisNodeCpuSensor(SwisNodeEntity):
     entity_description = SensorEntityDescription(
         key="cpu_load",
         translation_key="cpu_load",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:chip",
     )
@@ -217,7 +217,7 @@ class SwisNodeMemorySensor(SwisNodeEntity):
     entity_description = SensorEntityDescription(
         key="percent_memory_used",
         translation_key="percent_memory_used",
-        native_unit_of_measurement=PERCENTAGE,
+        native_unit_of_measurement=UnitOfRatio.PERCENTAGE,
         state_class=SensorStateClass.MEASUREMENT,
         icon="mdi:memory",
     )
@@ -310,7 +310,7 @@ class SwisVolumeSensor(CoordinatorEntity[SwisDataUpdateCoordinator], SensorEntit
         self._attr_unique_id = f"{DOMAIN}_{node_id}_volume_{volume_id}"
         self._attr_translation_key = "volume_percent_used"
         self._attr_translation_placeholders = {"volume": volume_name}
-        self._attr_native_unit_of_measurement = PERCENTAGE
+        self._attr_native_unit_of_measurement = UnitOfRatio.PERCENTAGE
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:harddisk"
 
