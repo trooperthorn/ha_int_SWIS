@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-import voluptuous as vol
+import probatio
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -43,18 +43,18 @@ _LOGGER = logging.getLogger(__name__)
 
 CAPABILITY_QUERY = "SELECT TOP 1 n.NodeID FROM Orion.Nodes n"
 
-STEP_USER_SCHEMA = vol.Schema(
+STEP_USER_SCHEMA = probatio.Schema(
     {
-        vol.Required(CONF_HOST): TextSelector(),
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): NumberSelector(
+        probatio.Required(CONF_HOST): TextSelector(),
+        probatio.Required(CONF_PORT, default=DEFAULT_PORT): NumberSelector(
             NumberSelectorConfig(min=1, max=65535, mode=NumberSelectorMode.BOX)
         ),
-        vol.Required(CONF_USERNAME): TextSelector(),
-        vol.Required(CONF_PASSWORD): TextSelector(
+        probatio.Required(CONF_USERNAME): TextSelector(),
+        probatio.Required(CONF_PASSWORD): TextSelector(
             TextSelectorConfig(type=TextSelectorType.PASSWORD)
         ),
-        vol.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): BooleanSelector(),
-        vol.Optional(CONF_WEB_CONSOLE_URL): TextSelector(),
+        probatio.Optional(CONF_VERIFY_SSL, default=DEFAULT_VERIFY_SSL): BooleanSelector(),
+        probatio.Optional(CONF_WEB_CONSOLE_URL): TextSelector(),
     }
 )
 
@@ -131,15 +131,15 @@ class SwisOptionsFlow(OptionsFlowWithReload):
             return self.async_create_entry(title="", data=user_input)
 
         options = self.config_entry.options
-        schema = vol.Schema(
+        schema = probatio.Schema(
             {
-                vol.Optional(
+                probatio.Optional(
                     "scan_interval",
                     default=options.get("scan_interval", DEFAULT_SCAN_INTERVAL),
                 ): NumberSelector(
                     NumberSelectorConfig(min=30, max=3600, mode=NumberSelectorMode.BOX)
                 ),
-                vol.Optional(
+                probatio.Optional(
                     CONF_VOLUME_TYPES,
                     default=options.get(CONF_VOLUME_TYPES, DEFAULT_VOLUME_TYPES),
                 ): SelectSelector(
