@@ -6,7 +6,6 @@ Only the query interface is used: this integration is read-only.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
@@ -78,7 +77,7 @@ class SwisClient:
                 payload = await resp.json(content_type=None)
         except SwisError:
             raise
-        except (aiohttp.ClientConnectorError, asyncio.TimeoutError) as err:
+        except (TimeoutError, aiohttp.ClientConnectorError) as err:
             raise SwisConnectionError(str(err)) from err
         except aiohttp.ClientError as err:
             raise SwisError(str(err)) from err
