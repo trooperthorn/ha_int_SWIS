@@ -1,9 +1,5 @@
-"""Shared pytest fixtures for swis tests."""
-import pytest
+"""Shared pytest fixtures for swis tests.
 
-pytest_plugins = "pytest_homeassistant_custom_component"
-
-
-@pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    yield
+The pytest-homeassistant plugin loads automatically and enables custom
+integrations by default, so no plugin registration or wrapper fixture is needed.
+"""
