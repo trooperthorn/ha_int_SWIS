@@ -5,4 +5,4 @@
 pytest-homeassistant==2026.11.2
 homeassistant==2026.11.2
 mypy==2.4.1
-ruff==0.17.5
+ruff==0.17.6
