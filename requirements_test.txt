@@ -2,7 +2,7 @@
 # matching homeassistant release, plus pytest and pytest-asyncio. Bump it and
 # homeassistant together, with the version guard in .github/workflows/test.yml.
 # Do not pin pytest or pytest-asyncio here: the harness owns those versions.
-pytest-homeassistant==2026.11.2
-homeassistant==2026.11.2
+pytest-homeassistant==2026.11.3
+homeassistant==2026.11.3
 mypy==2.4.1
 ruff==0.17.5
